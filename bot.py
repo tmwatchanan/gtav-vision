@@ -10,8 +10,8 @@ import winxpgui
 
 from processing import detect_face
 
-WINDOW_WIDTH = 1280
-WINDOW_HEIGHT = 720
+WINDOW_WIDTH = 1600
+WINDOW_HEIGHT = 900
 
 LEFT_OFFSET = 8
 TOP_OFFSET = 32
@@ -61,6 +61,8 @@ def main():
     blank_img = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), np.uint8)
 
     first = True
+    start = time.time()
+    frame_count = 0
     while True:
         last_time = time.time()
 
@@ -72,9 +74,15 @@ def main():
 
         cv_hwnd = display_image(overlay_img)
         if first:
-            win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, 0, 0, WINDOW_WIDTH+LEFT_OFFSET, WINDOW_HEIGHT+TOP_OFFSET, 0) 
+            win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
             first = False
         overlay_cv_window(cv_hwnd)
+
+        # frame_count += 1
+        # if frame_count % 120 == 0:
+        #     fps = frame_count / (time.time() - start)
+        #     print(f"FPS = {fps}")
+        #     break
 
         print(f'loop took {round(time.time()-last_time, 3)} seconds.')
         if cv2.waitKey(25) & 0xFF == ord('q'):
