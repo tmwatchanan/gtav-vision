@@ -6,6 +6,11 @@
 import ctypes
 import time
 
+import keys as k
+
+
+keys = k.Keys({})
+
 SendInput = ctypes.windll.user32.SendInput
 
 
@@ -72,7 +77,19 @@ def straight():
     ReleaseKey(D)
     ReleaseKey(S)
 
+
+def determine_movement(mid_x, mid_y,width=1280, height=705):
+    x_move = 0.5-mid_x
+    y_move = 0.5-mid_y
+    hm_x = x_move/0.5
+    hm_y = y_move/0.5
+    keys.keys_worker.SendInput(keys.keys_worker.Mouse(0x0001, -1*int(hm_x*width), -1*int(hm_y*height)))
+
 if __name__ == '__main__':
     while True:
-        straight()
-        time.sleep(5)
+        # straight()
+        # click(100, 100)
+        # determine_movement(0.1, 0.1)
+        keys.keys_worker.SendInput(keys.keys_worker.Mouse(0x0001, 1000, 200))
+        time.sleep(1)
+        print("control")
