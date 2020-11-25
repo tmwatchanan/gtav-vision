@@ -45,18 +45,21 @@ def display_image(img, width=None, height=None, title="DIP"):
     cv_hwnd = win32gui.FindWindow(None, title)
     return cv_hwnd
 
-def setClickthrough(hwnd):
+def overlay_cv_window(hwnd, alpha=100):
     try:
         styles = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
         styles = win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT
         win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, styles)
-        win32gui.SetLayeredWindowAttributes(hwnd, 0, 255, win32con.LWA_ALPHA)
+        win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0,0,0), alpha, win32con.LWA_COLORKEY)
     except Exception as e:
         print(e)
 
 def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
     win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
+
+    blank_img = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), np.uint8)
+
     first = True
     while True:
         last_time = time.time()
@@ -65,15 +68,13 @@ def main():
         # face_img = detect_face(screen)
 
         coords = (500, 500)
-        img = cv2.circle(img, coords, radius=10, color=(255, 0, 0), thickness=2)
+        overlay_img = cv2.circle(blank_img, coords, radius=10, color=(0, 0, 255), thickness=2)
 
-        cv_hwnd = display_image(img)
+        cv_hwnd = display_image(overlay_img)
         if first:
             win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, 0, 0, WINDOW_WIDTH+LEFT_OFFSET, WINDOW_HEIGHT+TOP_OFFSET, 0) 
             first = False
-        win32gui.SetWindowLong(cv_hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong (hwnd, win32con.GWL_EXSTYLE ) | win32con.WS_EX_LAYERED )
-        winxpgui.SetLayeredWindowAttributes(cv_hwnd, win32api.RGB(0,0,0), 180, win32con.LWA_ALPHA)
-        setClickthrough(cv_hwnd)
+        overlay_cv_window(cv_hwnd)
 
         print(f'loop took {round(time.time()-last_time, 3)} seconds.')
         if cv2.waitKey(25) & 0xFF == ord('q'):
