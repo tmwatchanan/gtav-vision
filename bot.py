@@ -13,6 +13,9 @@ from processing import detect_face
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 900
 
+OVERLAY_WIDTH = 1024
+OVERLAY_HEIGHT = 576
+
 LEFT_OFFSET = 8
 TOP_OFFSET = 32
 
@@ -58,7 +61,7 @@ def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
     win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
 
-    blank_img = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), np.uint8)
+    blank_img = np.zeros((OVERLAY_HEIGHT, OVERLAY_WIDTH, 3), np.uint8)
 
     first = True
     start = time.time()
@@ -67,12 +70,14 @@ def main():
         last_time = time.time()
 
         img = background_screenshot(hwnd, WINDOW_WIDTH, WINDOW_HEIGHT, left=LEFT_OFFSET, top=TOP_OFFSET)
-        # face_img = detect_face(screen)
+        img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
 
-        coords = (500, 500)
-        overlay_img = cv2.circle(blank_img, coords, radius=10, color=(0, 0, 255), thickness=2)
+        overlay_img = blank_img.copy()
+        # coords = (500, 500)
+        # overlay_img = cv2.circle(overlay_img, coords, radius=10, color=(0, 0, 255), thickness=2)
+        overlay_img = detect_face(overlay_img, img)
 
-        cv_hwnd = display_image(overlay_img)
+        cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         if first:
             win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
             first = False
