@@ -11,8 +11,10 @@ import win32ui
 import winxpgui
 
 from processing import detect_face
+from processing_yolo import YoloModel
 
 FACE_DETECTION = False
+HEAD_DETECTION = True
 
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 900
@@ -73,6 +75,8 @@ def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
     win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
 
+    yolo_model = YoloModel()
+
     ss = None
 
     keyboard.on_press_key("=", lambda _: save_screenshot(ss))
@@ -94,6 +98,10 @@ def main():
         # overlay_img = cv2.circle(overlay_img, coords, radius=10, color=(0, 0, 255), thickness=2)
         if FACE_DETECTION:
             overlay_img, (aim_x, aim_y) = detect_face(overlay_img, img)
+        if HEAD_DETECTION:
+            out_df, detected_img = yolo_model.detect(img)
+            for index, row in out_df.iterrows():
+                overlay_img = cv2.rectangle(overlay_img, (row.xmin, row.ymin), (row.xmax, row.ymax), (255, 255, 0), thickness=2)
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         if first:

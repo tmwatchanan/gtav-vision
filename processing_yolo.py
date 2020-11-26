@@ -69,7 +69,7 @@ class YoloModel:
     
     def detect(self, img, show_time=True):
         start = timer()
-        prediction, detected_img = self.yolo.detect_image(img)
+        prediction, detected_img = self.yolo.detect_image(img, show_stats=False)
         detected_img = np.asarray(detected_img)
         y_size, x_size, _ = detected_img.shape
 
@@ -115,7 +115,7 @@ class YoloModel:
 if __name__ == "__main__":
     yolo_model = YoloModel()
     img = cv2.imread("1.png")
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     out_df, detected_img = yolo_model.detect(img)
     cv2.imshow("yolo", detected_img)
     print(out_df)
