@@ -26,32 +26,38 @@ def compose(*funcs):
 
 def letterbox_image_cv(image, size):
     """resize image with unchanged aspect ratio using padding"""
-    # image = Image.fromarray(image)
-    iw, ih = image.size
+    a = Image.fromarray(image)
+    print(a.size)
+    ih, iw, _ = image.shape
+    print(image.shape)
     w, h = size
-    scale = min(w / iw, h / ih)
+    scale = min(h / ih, w / iw)
     nw = int(iw * scale)
     nh = int(ih * scale)
+    print(nw, nh)
+    cv2.imshow("original image", image)
 
-    image = image.resize((nw, nh), Image.BICUBIC)
-    new_image = Image.new("RGB", size, (128, 128, 128))
-    new_image.paste(image, ((w - nw) // 2, (h - nh) // 2))
+    image = cv2.resize(image, (nw, nh))
+    new_image = np.zeros((h, w, 3), np.uint8)
+    new_image[:] = (128, 128, 128)
+    x = (w - nw) // 2
+    y = (h - nh) // 2
+
+    # new_image[y:y+h, x:x+w, :] = image
+    print("x", x)
+    print("y", y)
+    new_image = cv2.copyMakeBorder(image, y, y, 0, 0, cv2.BORDER_CONSTANT, value=(128, 128, 128))
+    print(new_image.shape)
+
+    cv2.imshow("image", image)
+    cv2.imshow("new_image", new_image)
+    while True:
+        key = cv2.waitKey(3000)#pauses for 3 seconds before fetching next image
+        if key == 27:#if ESC is pressed, exit loop
+            cv2.destroyAllWindows()
+            break
+
     return new_image
-    # """resize image with unchanged aspect ratio using padding"""
-    # iw, ih, _ = image.shape
-    # w, h = size
-    # scale = min(w / iw, h / ih)
-    # nw = int(iw * scale)
-    # nh = int(ih * scale)
-    # print(nw, nh)
-
-    # image = cv2.resize(image, (nw, nh))
-    # new_image = np.zeros((nw, nh, 3), np.uint8)
-    # new_image[:] = (128, 128, 128)
-    # x = (w - nw) // 2
-    # y = (h - nh) // 2
-    # new_image[x:x+w, y:y+h] = image[x:x+w, y:y+h]
-    # return new_image
 
 
 def letterbox_image(image, size):
