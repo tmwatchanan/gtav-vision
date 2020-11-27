@@ -73,7 +73,7 @@ def save_screenshot(img):
 
 def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
-    win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
+    win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, -7, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
 
     yolo_model = YoloModel()
 
@@ -110,7 +110,7 @@ def main():
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         if first:
-            win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
+            win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, -7, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
             first = False
         overlay_cv_window(cv_hwnd)
 
