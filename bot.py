@@ -101,7 +101,12 @@ def main():
         if HEAD_DETECTION:
             out_df, detected_img = yolo_model.detect(img)
             for index, row in out_df.iterrows():
-                overlay_img = cv2.rectangle(overlay_img, (row.xmin, row.ymin), (row.xmax, row.ymax), (255, 255, 0), thickness=2)
+                overlay_img = cv2.rectangle(overlay_img, (row.xmin, row.ymin), (row.xmax, row.ymax), (255, 255, 0), thickness=1)
+            for index, row in out_df.iterrows():
+                aim_x = int((row.xmin + row.xmax) / 2)
+                aim_y = int((row.ymin + row.ymax) / 2)
+                overlay_img = cv2.circle(overlay_img, (aim_x, aim_y), radius = 4, color=(0, 0, 255), thickness=2)
+                break
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         if first:
@@ -121,6 +126,7 @@ def main():
             cv2.destroyAllWindows()
             break
         # elif pressed_key == ord('w'):
+    del yolo_model
 
 
 
@@ -130,3 +136,4 @@ if __name__ == "__main__":
 
 # useful links
 # https://stackoverflow.com/questions/41785831/how-to-optimize-conversion-from-pycbitmap-to-opencv-image
+# https://blog.insightdatascience.com/how-to-train-your-own-yolov3-detector-from-scratch-224d10e55de2
