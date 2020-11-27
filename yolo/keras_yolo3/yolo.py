@@ -22,6 +22,10 @@ import tensorflow.python.keras.backend as K
 tf.disable_eager_execution()
 
 
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.InteractiveSession(config=config)
+
 class YOLO(object):
     _defaults = {
         "model_path": "model_data/yolo.h5",

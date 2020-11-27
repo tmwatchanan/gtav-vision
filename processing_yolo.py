@@ -62,9 +62,9 @@ class YoloModel:
         class_file = open(model_classes, "r")
         self.input_labels = [line.rstrip("\n") for line in class_file.readlines()]
     
-    # def __del__(self):
-    #     # Close the current yolo session
-    #     self.yolo.close_session()
+    def __del__(self):
+        # Close the current yolo session
+        self.yolo.close_session()
 
     
     def detect(self, img, show_time=True):
