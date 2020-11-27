@@ -1,14 +1,20 @@
-import cv2
-import numpy as np
+import os
 import time
 
+import cv2
+import keyboard
+import numpy as np
+import win32api
+import win32con
 import win32gui
 import win32ui
-import win32con
-import win32api
 import winxpgui
 
 from processing import detect_face
+from processing_yolo import YoloModel
+
+FACE_DETECTION = False
+HEAD_DETECTION = True
 
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 900
@@ -18,6 +24,8 @@ OVERLAY_HEIGHT = 576
 
 LEFT_OFFSET = 8
 TOP_OFFSET = 32
+
+DATASET_HEAD_DIR = os.path.join("dataset", "head")
 
 def background_screenshot(hwnd, width, height, left=0, top=0):
     wDC = win32gui.GetWindowDC(hwnd)
@@ -57,9 +65,21 @@ def overlay_cv_window(hwnd, alpha=100):
     except Exception as e:
         print(e)
 
+def save_screenshot(img):
+    timestr = time.strftime("%Y_%m_%d-%H_%M_%S")
+    img_path = os.path.join(DATASET_HEAD_DIR, f"{timestr}.jpg")
+    print(f"Saved {img_path}")
+    cv2.imwrite(img_path, img)
+
 def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
     win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
+
+    yolo_model = YoloModel()
+
+    ss = None
+
+    keyboard.on_press_key("=", lambda _: save_screenshot(ss))
 
     blank_img = np.zeros((OVERLAY_HEIGHT, OVERLAY_WIDTH, 3), np.uint8)
 
@@ -69,13 +89,24 @@ def main():
     while True:
         last_time = time.time()
 
-        img = background_screenshot(hwnd, WINDOW_WIDTH, WINDOW_HEIGHT, left=LEFT_OFFSET, top=TOP_OFFSET)
+        ss = background_screenshot(hwnd, WINDOW_WIDTH, WINDOW_HEIGHT, left=LEFT_OFFSET, top=TOP_OFFSET)
+        img = ss.copy()
         img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
 
         overlay_img = blank_img.copy()
         # coords = (500, 500)
         # overlay_img = cv2.circle(overlay_img, coords, radius=10, color=(0, 0, 255), thickness=2)
-        overlay_img = detect_face(overlay_img, img)
+        if FACE_DETECTION:
+            overlay_img, (aim_x, aim_y) = detect_face(overlay_img, img)
+        if HEAD_DETECTION:
+            out_df, detected_img = yolo_model.detect(img)
+            for index, row in out_df.iterrows():
+                overlay_img = cv2.rectangle(overlay_img, (row.xmin, row.ymin), (row.xmax, row.ymax), (255, 255, 0), thickness=1)
+            for index, row in out_df.iterrows():
+                aim_x = int((row.xmin + row.xmax) / 2)
+                aim_y = int((row.ymin + row.ymax) / 2)
+                overlay_img = cv2.circle(overlay_img, (aim_x, aim_y), radius = 4, color=(0, 0, 255), thickness=2)
+                break
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         if first:
@@ -89,10 +120,14 @@ def main():
         #     print(f"FPS = {fps}")
         #     break
 
-        print(f'loop took {round(time.time()-last_time, 3)} seconds.')
-        if cv2.waitKey(25) & 0xFF == ord('q'):
+        # print(f'loop took {round(time.time()-last_time, 3)} seconds.')
+        pressed_key = cv2.waitKey(1) & 0xFF
+        if pressed_key == ord('q'):
             cv2.destroyAllWindows()
             break
+        # elif pressed_key == ord('w'):
+    del yolo_model
+
 
 
 if __name__ == "__main__":
@@ -101,3 +136,4 @@ if __name__ == "__main__":
 
 # useful links
 # https://stackoverflow.com/questions/41785831/how-to-optimize-conversion-from-pycbitmap-to-opencv-image
+# https://blog.insightdatascience.com/how-to-train-your-own-yolov3-detector-from-scratch-224d10e55de2

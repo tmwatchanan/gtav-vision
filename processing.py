@@ -14,7 +14,11 @@ def detect_face(overlay_img, img):
 
     faces = face_cascade.detectMultiScale(gray, 1.05, 8)
 
+    aim_x, aim_y = None, None
     for (x, y, w, h) in faces:
         cv2.rectangle(overlay_img, (x, y), (x+w, y+h), (255, 255, 0), 2)
+        aim_x = (x + (x+w)) / 2
+        aim_y = (y + (y+h)) / 2
+        # break
     
-    return overlay_img
+    return overlay_img, (aim_x, aim_y)
