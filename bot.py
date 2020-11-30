@@ -53,6 +53,7 @@ def display_image(img, width=None, height=None, title="DIP"):
     if width is not None and height is not None:
         img = cv2.resize(img, (width, height))
     cv2.imshow(title, img)
+    # cv2.moveWindow(title, 0, 0)
     cv_hwnd = win32gui.FindWindow(None, title)
     return cv_hwnd
 
@@ -71,15 +72,22 @@ def save_screenshot(img):
     print(f"Saved {img_path}")
     cv2.imwrite(img_path, img)
 
+running = True
+def stop_running():
+    global running
+    running = False
+
 def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
-    win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, -7, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
+    win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
 
-    yolo_model = YoloModel()
+    if HEAD_DETECTION:
+        yolo_model = YoloModel()
 
     ss = None
 
     keyboard.on_press_key("=", lambda _: save_screenshot(ss))
+    keyboard.on_press_key("|", lambda _: stop_running())
 
     blank_img = np.zeros((OVERLAY_HEIGHT, OVERLAY_WIDTH, 3), np.uint8)
 
@@ -94,12 +102,10 @@ def main():
         img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
 
         overlay_img = blank_img.copy()
-        # coords = (500, 500)
-        # overlay_img = cv2.circle(overlay_img, coords, radius=10, color=(0, 0, 255), thickness=2)
         if FACE_DETECTION:
             overlay_img, (aim_x, aim_y) = detect_face(overlay_img, img)
         if HEAD_DETECTION:
-            out_df, detected_img = yolo_model.detect(img)
+            out_df, detected_img = yolo_model.detect(img, show_stats=False)
             for index, row in out_df.iterrows():
                 overlay_img = cv2.rectangle(overlay_img, (row.xmin, row.ymin), (row.xmax, row.ymax), (255, 255, 0), thickness=1)
             for index, row in out_df.iterrows():
@@ -110,9 +116,9 @@ def main():
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         if first:
-            win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, -7, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
             first = False
-        overlay_cv_window(cv_hwnd)
+            win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
+            overlay_cv_window(cv_hwnd)
 
         # frame_count += 1
         # if frame_count % 120 == 0:
@@ -121,17 +127,21 @@ def main():
         #     break
 
         # print(f'loop took {round(time.time()-last_time, 3)} seconds.')
-        pressed_key = cv2.waitKey(1) & 0xFF
-        if pressed_key == ord('q'):
-            cv2.destroyAllWindows()
+        if not running:
             break
-        # elif pressed_key == ord('w'):
+    cv2.destroyAllWindows()
     del yolo_model
 
+
+def main_control():
+    print("running")
+    while True:
+        time.sleep(1)
 
 
 if __name__ == "__main__":
     main()
+    # main_control()
 
 
 # useful links

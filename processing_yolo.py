@@ -67,9 +67,9 @@ class YoloModel:
         self.yolo.close_session()
 
     
-    def detect(self, img, show_time=True):
+    def detect(self, img, show_stats=True):
         start = timer()
-        prediction, detected_img = self.yolo.detect_image(img, show_stats=False)
+        prediction, detected_img = self.yolo.detect_image(img, show_stats=show_stats)
         detected_img = np.asarray(detected_img)
         y_size, x_size, _ = detected_img.shape
 
@@ -107,7 +107,7 @@ class YoloModel:
                 )
             )
         end = timer()
-        if show_time:
+        if show_stats:
             print(f"Yolo v3 detection took {end-start:.2f} s")
         return out_df, detected_img
 
