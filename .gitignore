@@ -134,3 +134,7 @@ dmypy.json
 *.pb 
 *.gz
 *.npy
+
+# dataset
+dataset/head
+dataset/Model_Weights
