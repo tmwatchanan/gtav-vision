@@ -137,4 +137,5 @@ dmypy.json
 
 # dataset
 dataset/head
-dataset/Model_Weights
+dataset/Model_Weights/*/train
+dataset/Model_Weights/*/validation
