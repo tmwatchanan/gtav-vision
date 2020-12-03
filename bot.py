@@ -14,7 +14,8 @@ from processing import detect_face
 from processing_yolo import YoloModel
 
 FACE_DETECTION = False
-HEAD_DETECTION = True
+HEAD_DETECTION = False
+NAV_DETECTION = True
 
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 900
@@ -53,7 +54,6 @@ def display_image(img, width=None, height=None, title="DIP"):
     if width is not None and height is not None:
         img = cv2.resize(img, (width, height))
     cv2.imshow(title, img)
-    # cv2.moveWindow(title, 0, 0)
     cv_hwnd = win32gui.FindWindow(None, title)
     return cv_hwnd
 
@@ -81,8 +81,7 @@ def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
     win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
 
-    if HEAD_DETECTION:
-        yolo_model = YoloModel()
+    yolo_model = YoloModel()
 
     ss = None
 
@@ -102,10 +101,12 @@ def main():
         img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
 
         overlay_img = blank_img.copy()
+        # coords = (500, 500)
+        # overlay_img = cv2.circle(overlay_img, coords, radius=10, color=(0, 0, 255), thickness=2)
         if FACE_DETECTION:
             overlay_img, (aim_x, aim_y) = detect_face(overlay_img, img)
         if HEAD_DETECTION:
-            out_df, detected_img = yolo_model.detect(img, show_stats=False)
+            out_df, detected_img = yolo_model.detect(img)
             for index, row in out_df.iterrows():
                 overlay_img = cv2.rectangle(overlay_img, (row.xmin, row.ymin), (row.xmax, row.ymax), (255, 255, 0), thickness=1)
             for index, row in out_df.iterrows():
@@ -113,12 +114,26 @@ def main():
                 aim_y = int((row.ymin + row.ymax) / 2)
                 overlay_img = cv2.circle(overlay_img, (aim_x, aim_y), radius = 4, color=(0, 0, 255), thickness=2)
                 break
+        if NAV_DETECTION:
+            lower_nav_color = (160, 160, 160)
+            upper_nav_color = (170, 255, 255)
+
+            lower_nav_head_color = (160, 170, 170)
+            upper_nav_head_color = (170, 255, 255)
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+            mask = cv2.inRange(img_hsv, lower_nav_color, upper_nav_color)
+            # cv2.imwrite("mask.jpg", mask)
+            head_mask = cv2.inRange(img_hsv, lower_nav_head_color, upper_nav_head_color)
+            # cv2.imwrite("head_mask.jpg", head_mask)
+            # overlay_img = cv2.bitwise_and(img, img, mask=mask)
+            overlay_img[mask > 0] = (255, 0, 0)
+            # cv2.imwrite("nav.jpg", overlay_img)
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         if first:
+            win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, -7, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
             first = False
-            win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
-            overlay_cv_window(cv_hwnd)
+        overlay_cv_window(cv_hwnd)
 
         # frame_count += 1
         # if frame_count % 120 == 0:
@@ -127,21 +142,17 @@ def main():
         #     break
 
         # print(f'loop took {round(time.time()-last_time, 3)} seconds.')
-        if not running:
+        pressed_key = cv2.waitKey(1) & 0xFF
+        if not running or pressed_key == ord('q'):
             break
     cv2.destroyAllWindows()
-    del yolo_model
+    if HEAD_DETECTION:
+        del yolo_model
 
-
-def main_control():
-    print("running")
-    while True:
-        time.sleep(1)
 
 
 if __name__ == "__main__":
     main()
-    # main_control()
 
 
 # useful links
