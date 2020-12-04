@@ -122,12 +122,32 @@ def main():
             upper_nav_head_color = (170, 255, 255)
             img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             mask = cv2.inRange(img_hsv, lower_nav_color, upper_nav_color)
-            # cv2.imwrite("mask.jpg", mask)
+            cv2.imwrite("mask.jpg", mask)
             head_mask = cv2.inRange(img_hsv, lower_nav_head_color, upper_nav_head_color)
-            # cv2.imwrite("head_mask.jpg", head_mask)
-            # overlay_img = cv2.bitwise_and(img, img, mask=mask)
-            overlay_img[mask > 0] = (255, 0, 0)
-            # cv2.imwrite("nav.jpg", overlay_img)
+            cv2.imwrite("head_mask.jpg", head_mask)
+            overlay_img = cv2.bitwise_and(img, img, mask=mask)
+            # overlay_img[mask > 0] = (255, 0, 0)
+            cv2.imwrite("nav.jpg", overlay_img)
+            cv2.imwrite("img.jpg", ss)
+
+            gray = cv2.cvtColor(overlay_img, cv2.COLOR_BGR2GRAY)
+            cv2.imwrite("gray.jpg", gray)
+            
+            th = gray.copy()
+            th[th > np.max(th) / 2] = 255
+            print(np.unique(th))
+            cv2.imshow("th", th)
+
+            contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+            areas = [cv2.contourArea(c) for c in contours]
+            max_index = np.argmax(areas)
+            cnt=contours[max_index]
+
+            x,y,w,h = cv2.boundingRect(cnt)
+            cv2.rectangle(overlay_img,(x,y),(x+w,y+h),(0,255,0),2)
+            # cv2.imshow("overlay_img", overlay_img)
+
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         if first:
