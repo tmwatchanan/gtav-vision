@@ -33,6 +33,8 @@ SS_TOP_OFFSET = 31 + HEIGHT_OFFSET
 POS_LEFT_OFFSET = 10
 POS_TOP_OFFSET = 39
 
+ARROW_POS = (72, 72) # relative to ROI
+
 DATASET_HEAD_DIR = os.path.join("dataset", "head")
 
 def background_screenshot(hwnd, width, height, left=0, top=0):
@@ -243,15 +245,23 @@ def main():
 
             contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+            overlay_roi = np.zeros(roi.shape)
+
             if contours:
                 areas = [cv2.contourArea(c) for c in contours]
                 max_index = np.argmax(areas)
-                cnt=contours[max_index]
+                cnt = contours[max_index]
+
+                cv2.drawContours(overlay_roi, [cnt], 0, (255,0,0), -1)
 
                 x,y,w,h = cv2.boundingRect(cnt)
-                x += MAP_WIDTH[0]
-                y += MAP_HEIGHT[0]
-                cv2.rectangle(overlay_img,(x,y),(x+w,y+h),(0,255,0),2)
+                # x += MAP_WIDTH[0]
+                # y += MAP_HEIGHT[0]
+                cv2.rectangle(overlay_roi,(x,y),(x+w,y+h),(0,255,0),2)
+
+                overlay_img[MAP_HEIGHT[0]: MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1], :] = overlay_roi
+
+                cv2.imwrite("overlay_roi.jpg", overlay_roi)
 
                 global auto_pilot
                 if auto_pilot:
