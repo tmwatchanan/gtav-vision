@@ -9,9 +9,12 @@ import win32con
 import win32gui
 import win32ui
 import winxpgui
+import random
 
 from processing import detect_face
 from processing_yolo import YoloModel
+
+from directkeys import PressKey, ReleaseKey, W, A, S, D
 
 FACE_DETECTION = False
 HEAD_DETECTION = False
@@ -85,6 +88,83 @@ def stop_running():
     global running
     running = False
 
+auto_pilot = False
+
+def set_auto_pilot(state):
+    global auto_pilot
+    auto_pilot = state
+    print(f"auto_pilot {auto_pilot}")
+
+
+def straight():
+    PressKey(W)
+    ReleaseKey(A)
+    ReleaseKey(D)
+    ReleaseKey(S)
+
+def left():
+    if random.randrange(0,3) == 1:
+        PressKey(W)
+    else:
+        ReleaseKey(W)
+    PressKey(A)
+    ReleaseKey(S)
+    ReleaseKey(D)
+    #ReleaseKey(S)
+
+def right():
+    if random.randrange(0,3) == 1:
+        PressKey(W)
+    else:
+        ReleaseKey(W)
+    PressKey(D)
+    ReleaseKey(A)
+    ReleaseKey(S)
+    
+def reverse():
+    PressKey(S)
+    ReleaseKey(A)
+    ReleaseKey(W)
+    ReleaseKey(D)
+
+
+def forward_left():
+    PressKey(W)
+    PressKey(A)
+    ReleaseKey(D)
+    ReleaseKey(S)
+    
+    
+def forward_right():
+    PressKey(W)
+    PressKey(D)
+    ReleaseKey(A)
+    ReleaseKey(S)
+
+    
+def reverse_left():
+    PressKey(S)
+    PressKey(A)
+    ReleaseKey(W)
+    ReleaseKey(D)
+
+    
+def reverse_right():
+    PressKey(S)
+    PressKey(D)
+    ReleaseKey(W)
+    ReleaseKey(A)
+
+def no_keys():
+
+    # if random.randrange(0,3) == 1:
+    #     PressKey(W)
+    # else:
+    ReleaseKey(W)
+    ReleaseKey(A)
+    ReleaseKey(S)
+    ReleaseKey(D)
+
 def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
     set_window_position(hwnd, top=False)
@@ -95,6 +175,8 @@ def main():
 
     keyboard.on_press_key("=", lambda _: save_screenshot(ss))
     keyboard.on_press_key("|", lambda _: stop_running())
+    keyboard.on_press_key("[", lambda _: set_auto_pilot(True))
+    keyboard.on_press_key("]", lambda _: set_auto_pilot(False))
 
     blank_img = np.zeros((OVERLAY_HEIGHT, OVERLAY_WIDTH, 3), np.uint8)
 
@@ -171,9 +253,17 @@ def main():
                 y += MAP_HEIGHT[0]
                 cv2.rectangle(overlay_img,(x,y),(x+w,y+h),(0,255,0),2)
 
+                global auto_pilot
                 if auto_pilot:
+                    print(h)
                     if h > 20:
-
+                        hwndChild = win32gui.GetWindow(hwnd, win32con.GW_CHILD)
+                        temp = win32api.PostMessage(hwndChild, win32con.WM_CHAR, 'w', 0)
+                        # straight()
+                        PressKey(W)
+                    else:
+                        ReleaseKey(W)
+                        
             # cv2.imshow("overlay_img", overlay_img)
 
 
