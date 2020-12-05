@@ -23,8 +23,12 @@ WINDOW_HEIGHT = 900
 OVERLAY_WIDTH = 1024
 OVERLAY_HEIGHT = 576
 
-LEFT_OFFSET = 8
-TOP_OFFSET = 32
+WIDTH_OFFSET = 7
+HEIGHT_OFFSET = 0
+SS_LEFT_OFFSET = 2 + WIDTH_OFFSET
+SS_TOP_OFFSET = 31 + HEIGHT_OFFSET
+POS_LEFT_OFFSET = 10
+POS_TOP_OFFSET = 39
 
 DATASET_HEAD_DIR = os.path.join("dataset", "head")
 
@@ -35,7 +39,7 @@ def background_screenshot(hwnd, width, height, left=0, top=0):
     dataBitMap = win32ui.CreateBitmap()
     dataBitMap.CreateCompatibleBitmap(dcObj, width, height)
     cDC.SelectObject(dataBitMap)
-    cDC.BitBlt((0,0), (width+left, height+top), dcObj, (left,top), win32con.SRCCOPY)
+    cDC.BitBlt((0,0), (width+left, height+top), dcObj, (left, top), win32con.SRCCOPY)
 
     signedIntsArray = dataBitMap.GetBitmapBits(True)
     img = np.fromstring(signedIntsArray, dtype='uint8')
@@ -72,6 +76,10 @@ def save_screenshot(img):
     print(f"Saved {img_path}")
     cv2.imwrite(img_path, img)
 
+def set_window_position(hwnd, top):
+    topmost_con = win32con.HWND_TOPMOST if top else win32con.HWND_NOTOPMOST
+    win32gui.SetWindowPos(hwnd, topmost_con, 0, 0, WINDOW_WIDTH + POS_LEFT_OFFSET, WINDOW_HEIGHT + POS_TOP_OFFSET, 0) 
+
 running = True
 def stop_running():
     global running
@@ -79,7 +87,7 @@ def stop_running():
 
 def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
-    win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
+    set_window_position(hwnd, top=False)
 
     yolo_model = YoloModel()
 
@@ -96,7 +104,7 @@ def main():
     while True:
         last_time = time.time()
 
-        ss = background_screenshot(hwnd, WINDOW_WIDTH, WINDOW_HEIGHT, left=LEFT_OFFSET, top=TOP_OFFSET)
+        ss = background_screenshot(hwnd, WINDOW_WIDTH, WINDOW_HEIGHT, left=SS_LEFT_OFFSET, top=SS_TOP_OFFSET)
         img = ss.copy()
         img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
 
@@ -122,36 +130,36 @@ def main():
             upper_nav_head_color = (170, 255, 255)
             img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             mask = cv2.inRange(img_hsv, lower_nav_color, upper_nav_color)
-            cv2.imwrite("mask.jpg", mask)
+            # cv2.imwrite("mask.jpg", mask)
             head_mask = cv2.inRange(img_hsv, lower_nav_head_color, upper_nav_head_color)
-            cv2.imwrite("head_mask.jpg", head_mask)
+            # cv2.imwrite("head_mask.jpg", head_mask)
             overlay_img = cv2.bitwise_and(img, img, mask=mask)
             # overlay_img[mask > 0] = (255, 0, 0)
-            cv2.imwrite("nav.jpg", overlay_img)
-            cv2.imwrite("img.jpg", ss)
+            # cv2.imwrite("nav.jpg", overlay_img)
+            # cv2.imwrite("img.jpg", ss)
 
             gray = cv2.cvtColor(overlay_img, cv2.COLOR_BGR2GRAY)
-            cv2.imwrite("gray.jpg", gray)
+            # cv2.imwrite("gray.jpg", gray)
             
             th = gray.copy()
+            th[head_mask > 0] = 0
             th[th > np.max(th) / 2] = 255
-            print(np.unique(th))
-            cv2.imshow("th", th)
 
             contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-            areas = [cv2.contourArea(c) for c in contours]
-            max_index = np.argmax(areas)
-            cnt=contours[max_index]
+            if contours:
+                areas = [cv2.contourArea(c) for c in contours]
+                max_index = np.argmax(areas)
+                cnt=contours[max_index]
 
-            x,y,w,h = cv2.boundingRect(cnt)
-            cv2.rectangle(overlay_img,(x,y),(x+w,y+h),(0,255,0),2)
+                x,y,w,h = cv2.boundingRect(cnt)
+                cv2.rectangle(overlay_img,(x,y),(x+w,y+h),(0,255,0),2)
             # cv2.imshow("overlay_img", overlay_img)
 
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
         if first:
-            win32gui.SetWindowPos(cv_hwnd, win32con.HWND_TOPMOST, -7, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0) 
+            set_window_position(cv_hwnd, top=True)
             first = False
         overlay_cv_window(cv_hwnd)
 
