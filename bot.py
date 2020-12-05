@@ -128,18 +128,32 @@ def main():
 
             lower_nav_head_color = (160, 170, 170)
             upper_nav_head_color = (170, 255, 255)
-            img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-            mask = cv2.inRange(img_hsv, lower_nav_color, upper_nav_color)
-            # cv2.imwrite("mask.jpg", mask)
-            head_mask = cv2.inRange(img_hsv, lower_nav_head_color, upper_nav_head_color)
+
+            # MAP_HEIGHT = (675, 834)
+            # MAP_WIDTH = (49, 264)
+            MAP_HEIGHT = (462, 556)
+            MAP_WIDTH = (13, 158)
+            # cv2.imwrite("img.jpg", img)
+            # print(img.shape)
+            roi = img[MAP_HEIGHT[0]:MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1] , :]
+            cv2.imwrite("roi.jpg", roi)
+            roi_hsv = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
+            mask = cv2.inRange(roi_hsv, lower_nav_color, upper_nav_color)
+            head_mask = cv2.inRange(roi_hsv, lower_nav_head_color, upper_nav_head_color)
+            kernel = np.ones((2,2), np.uint8)
+            # head_mask = cv2.morphologyEx(head_mask, cv2.MORPH_OPEN, kernel)
+            head_mask = cv2.erode(head_mask, kernel, iterations = 1)
+            head_mask = cv2.dilate(head_mask, kernel, iterations = 3)
             # cv2.imwrite("head_mask.jpg", head_mask)
-            overlay_img = cv2.bitwise_and(img, img, mask=mask)
+            # overlay_img = cv2.bitwise_and(img, img, mask=mask)
             # overlay_img[mask > 0] = (255, 0, 0)
             # cv2.imwrite("nav.jpg", overlay_img)
-            # cv2.imwrite("img.jpg", ss)
 
-            gray = cv2.cvtColor(overlay_img, cv2.COLOR_BGR2GRAY)
-            # cv2.imwrite("gray.jpg", gray)
+            nav_roi = roi.copy()
+            nav_roi[mask == 0] = 0
+            nav_roi[head_mask > 0] = 0
+# 
+            gray = cv2.cvtColor(nav_roi, cv2.COLOR_BGR2GRAY)
             
             th = gray.copy()
             th[head_mask > 0] = 0
@@ -153,7 +167,13 @@ def main():
                 cnt=contours[max_index]
 
                 x,y,w,h = cv2.boundingRect(cnt)
+                x += MAP_WIDTH[0]
+                y += MAP_HEIGHT[0]
                 cv2.rectangle(overlay_img,(x,y),(x+w,y+h),(0,255,0),2)
+
+                if auto_pilot:
+                    if h > 20:
+
             # cv2.imshow("overlay_img", overlay_img)
 
 
