@@ -245,19 +245,21 @@ def main():
 
             contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-            overlay_roi = np.zeros(roi.shape)
+            mask_roi = np.zeros((roi.shape[0], roi.shape[1]), np.uint8)
+            overlay_roi = np.zeros(roi.shape, np.uint8)
 
             if contours:
                 areas = [cv2.contourArea(c) for c in contours]
                 max_index = np.argmax(areas)
                 cnt = contours[max_index]
 
-                cv2.drawContours(overlay_roi, [cnt], 0, (255,0,0), -1)
+                cv2.drawContours(mask_roi, [cnt], 0, 255, -1)
+
+                mask_roi = cv2.ximgproc.thinning(mask_roi,None,cv2.ximgproc.THINNING_GUOHALL)
+                overlay_roi[mask_roi > 0] = (255, 0, 0)
 
                 x,y,w,h = cv2.boundingRect(cnt)
-                # x += MAP_WIDTH[0]
-                # y += MAP_HEIGHT[0]
-                cv2.rectangle(overlay_roi,(x,y),(x+w,y+h),(0,255,0),2)
+                # cv2.rectangle(overlay_roi,(x,y),(x+w,y+h),(0,255,0),2)
 
                 overlay_img[MAP_HEIGHT[0]: MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1], :] = overlay_roi
 
