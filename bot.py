@@ -261,13 +261,27 @@ def main():
                 x,y,w,h = cv2.boundingRect(cnt)
                 # cv2.rectangle(overlay_roi,(x,y),(x+w,y+h),(0,255,0),2)
 
+                a = np.argwhere(mask_roi > 0)
+                dist = np.sum(np.abs(a - ARROW_POS), axis=1)
+                m = np.argmin(dist)
+                nav_pos = a[m]
+
+                minLineLength = 10
+                maxLineGap = 10
+                lines = cv2.HoughLinesP(mask_roi,1,np.pi/180,10,np.array([]), minLineLength,maxLineGap)
+                if lines is not None:
+                    for line in lines:
+                        x1,y1,x2,y2 = line[0]
+                        cv2.line(overlay_roi,(x1,y1),(x2,y2),(0,255,0),1)
+
                 overlay_img[MAP_HEIGHT[0]: MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1], :] = overlay_roi
 
                 cv2.imwrite("overlay_roi.jpg", overlay_roi)
+                cv2.imwrite("mask_roi.jpg", mask_roi)
+
 
                 global auto_pilot
                 if auto_pilot:
-                    print(h)
                     if h > 20:
                         hwndChild = win32gui.GetWindow(hwnd, win32con.GW_CHILD)
                         temp = win32api.PostMessage(hwndChild, win32con.WM_CHAR, 'w', 0)
