@@ -220,7 +220,7 @@ def main():
             # cv2.imwrite("img.jpg", img)
             # print(img.shape)
             roi = img[MAP_HEIGHT[0]:MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1] , :]
-            cv2.imwrite("roi.jpg", roi)
+            # cv2.imwrite("roi.jpg", roi)
             roi_hsv = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
             mask = cv2.inRange(roi_hsv, lower_nav_color, upper_nav_color)
             head_mask = cv2.inRange(roi_hsv, lower_nav_head_color, upper_nav_head_color)
@@ -261,18 +261,60 @@ def main():
                 x,y,w,h = cv2.boundingRect(cnt)
                 # cv2.rectangle(overlay_roi,(x,y),(x+w,y+h),(0,255,0),2)
 
-                a = np.argwhere(mask_roi > 0)
-                dist = np.sum(np.abs(a - ARROW_POS), axis=1)
-                m = np.argmin(dist)
-                nav_pos = a[m]
+                # a = np.argwhere(mask_roi > 0)
+                # dist = np.sum(np.abs(a - ARROW_POS), axis=1)
+                # m = np.argmin(dist)
+                # nav_pos = a[m]
 
                 minLineLength = 10
                 maxLineGap = 10
                 lines = cv2.HoughLinesP(mask_roi,1,np.pi/180,10,np.array([]), minLineLength,maxLineGap)
                 if lines is not None:
+                    dist = []
                     for line in lines:
                         x1,y1,x2,y2 = line[0]
-                        cv2.line(overlay_roi,(x1,y1),(x2,y2),(0,255,0),1)
+                        # cv2.line(overlay_roi,(x1,y1),(x2,y2),(0,255,0),1)
+
+                        d1 = np.sum(np.abs(np.subtract((x1, y1), ARROW_POS)))
+                        d2 = np.sum(np.abs(np.subtract((x2, y2), ARROW_POS)))
+                        d = d1 + d2
+                        dist.append(d)
+
+                    m = np.argmin(dist)
+
+                    x1,y1,x2,y2 = lines[m][0]
+                    cv2.line(overlay_roi,(x1,y1),(x2,y2),(0,255,0),2)
+
+                    d1 = np.sum(np.subtract(ARROW_POS, (x1, y1)))
+                    d2 = np.sum(np.subtract(ARROW_POS, (x2, y2)))
+                    d = d1 + d2
+                    # + is above, - is beneath
+
+                    slope = (y2 - y1) / (x2 - x1)
+                    angle_with_y = np.arctan((x2 - x1) / (y2 - y1)) # radians
+                    angle_with_y = np.degrees(angle_with_y)
+
+                    h = np.max([y1, y2]) - np.min([y1, y2])
+
+                    # print(f"h={h}, angle={angle_with_y:.0f}")
+
+                    global auto_pilot
+                    if auto_pilot:
+                        if angle_with_y > 5:
+                            PressKey(A)
+                            ReleaseKey(D)
+                        elif angle_with_y < -5:
+                            PressKey(D)
+                            ReleaseKey(A)
+                        else:
+                            ReleaseKey(A)
+                            ReleaseKey(D)
+                        if h > 0:
+                            PressKey(W)
+                        else:
+                            ReleaseKey(W)
+
+
 
                 overlay_img[MAP_HEIGHT[0]: MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1], :] = overlay_roi
 
@@ -280,15 +322,6 @@ def main():
                 cv2.imwrite("mask_roi.jpg", mask_roi)
 
 
-                global auto_pilot
-                if auto_pilot:
-                    if h > 20:
-                        hwndChild = win32gui.GetWindow(hwnd, win32con.GW_CHILD)
-                        temp = win32api.PostMessage(hwndChild, win32con.WM_CHAR, 'w', 0)
-                        # straight()
-                        PressKey(W)
-                    else:
-                        ReleaseKey(W)
                         
             # cv2.imshow("overlay_img", overlay_img)
 
