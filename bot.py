@@ -138,6 +138,7 @@ def main():
         last_time = time.time()
 
         ss = background_screenshot(hwnd, WINDOW_WIDTH, WINDOW_HEIGHT, left=SS_LEFT_OFFSET, top=SS_TOP_OFFSET)
+        cv2.imwrite("ss.jpg", ss)
         img = ss.copy()
         img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
 
@@ -151,7 +152,16 @@ def main():
             global auto_pilot
             if auto_pilot:
                 auto_drive(h, angle)
-            cv2.imwrite("nav_th.jpg", nav_th)
+            gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            MAP_HEIGHT = (462, 556)
+            MAP_WIDTH = (13, 158)
+            cnn_img = gray_img.copy()
+            cnn_img[405:, :] = 0
+            cnn_img[MAP_HEIGHT[0]:MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1]] = nav_th
+            arrow = gray_img[530:541, 80:91]
+            _, arrow_th = cv2.threshold(arrow, 127, 255, cv2.THRESH_BINARY)
+            cnn_img[530:541, 80:91] = arrow_th
+            cv2.imwrite("cnn_img.jpg", cnn_img)
 
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
