@@ -13,6 +13,7 @@ import random
 
 from processing import detect_face, detect_head, detect_nav
 from processing_yolo import YoloModel
+from record_input import key_check, keys_to_output
 
 from directkeys import PressKey, ReleaseKey, W, A, S, D
 
@@ -146,10 +147,11 @@ def main():
         if HEAD_DETECTION:
             overlay_img = detect_head(yolo_model, img, overlay_img)
         if NAV_DETECTION:
-            overlay_img, h, angle = detect_nav(img, overlay_img)
+            overlay_img, nav_th, h, angle = detect_nav(img, overlay_img)
             global auto_pilot
             if auto_pilot:
                 auto_drive(h, angle)
+            cv2.imwrite("nav_th.jpg", nav_th)
 
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
