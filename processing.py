@@ -36,11 +36,8 @@ def detect_head(yolo_model, img, overlay_img):
     return overlay_img
 
 def detect_nav(img, overlay_img):
-    lower_nav_color = (160, 160, 160)
+    lower_nav_color = (160, 100, 170)
     upper_nav_color = (170, 255, 255)
-
-    lower_nav_head_color = (160, 170, 170)
-    upper_nav_head_color = (170, 255, 255)
 
     MAP_HEIGHT = (462, 556)
     MAP_WIDTH = (13, 158)
@@ -50,25 +47,28 @@ def detect_nav(img, overlay_img):
     roi = img[MAP_HEIGHT[0]:MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1] , :]
     roi_hsv = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
     mask = cv2.inRange(roi_hsv, lower_nav_color, upper_nav_color)
-    head_mask = cv2.inRange(roi_hsv, lower_nav_head_color, upper_nav_head_color)
     kernel = np.ones((2,2), np.uint8)
-    head_mask = cv2.erode(head_mask, kernel, iterations = 1)
-    head_mask = cv2.dilate(head_mask, kernel, iterations = 3)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    cv2.imwrite("mask.jpg", mask)
 
     nav_roi = roi.copy()
     nav_roi[mask == 0] = 0
-    nav_roi[head_mask > 0] = 0
+    cv2.imwrite("nav_roi.jpg", nav_roi)
 
-    gray = cv2.cvtColor(nav_roi, cv2.COLOR_BGR2GRAY)
-
-    th = gray.copy()
-    th[head_mask > 0] = 0
+    th = cv2.cvtColor(nav_roi, cv2.COLOR_BGR2GRAY)
     th[th > np.max(th) / 2] = 255
 
+    h, angle_with_y = find_nav_line(th, overlay_img, roi.shape, ARROW_POS, MAP_HEIGHT, MAP_WIDTH)
+
+        # cv2.imwrite("overlay_roi.jpg", overlay_roi)
+        # cv2.imwrite("mask_roi.jpg", mask_roi)
+    return overlay_img, th, h, angle_with_y
+
+def find_nav_line(th, overlay_img, roi_shape, ARROW_POS, MAP_HEIGHT, MAP_WIDTH):
     contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    mask_roi = np.zeros((roi.shape[0], roi.shape[1]), np.uint8)
-    overlay_roi = np.zeros(roi.shape, np.uint8)
+    mask_roi = np.zeros((roi_shape[0], roi_shape[1]), np.uint8)
+    overlay_roi = np.zeros(roi_shape, np.uint8)
 
     h = None
     angle_with_y = None
@@ -114,7 +114,4 @@ def detect_nav(img, overlay_img):
             # print(f"h={h}, angle={angle_with_y:.0f}")
 
         overlay_img[MAP_HEIGHT[0]: MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1], :] = overlay_roi
-
-        # cv2.imwrite("overlay_roi.jpg", overlay_roi)
-        # cv2.imwrite("mask_roi.jpg", mask_roi)
-    return overlay_img, h, angle_with_y
+    return h, angle_with_y
