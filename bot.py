@@ -11,8 +11,7 @@ import win32ui
 import winxpgui
 import random
 
-from config import Config
-from processing import detect_face, detect_head, detect_nav
+from processing import detect_face, detect_head, detect_nav, get_cnn_image
 from processing_yolo import YoloModel
 from record_input import key_check, keys_to_output
 
