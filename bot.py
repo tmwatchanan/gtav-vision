@@ -11,6 +11,7 @@ import win32ui
 import winxpgui
 import random
 
+from config import Config
 from processing import detect_face, detect_head, detect_nav, get_cnn_image
 from processing_yolo import YoloModel
 from record_input import key_check, keys_to_output
@@ -19,7 +20,8 @@ from directkeys import PressKey, ReleaseKey, W, A, S, D
 
 FACE_DETECTION = False
 HEAD_DETECTION = False
-NAV_DETECTION = True
+NAV_DETECTION = False
+DATA_COLLECTION = True
 
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 900
@@ -115,12 +117,30 @@ def auto_drive(h, angle):
     else:
         ReleaseKey(W)
 
+def get_new_training_name():
+    count = 1
+    while True:
+        data_filename = get_training_name(count)
+        if os.path.isfile(data_filename):
+            print('File exists, moving along',count)
+            count += 1
+        else:
+            print('File does not exist, starting fresh!',count)
+            return data_filename, count
+
+def get_training_name(count):
+    return Config.TRAINING_DATA_PATH.replace("X", str(count))
+
 def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
     set_window_position(hwnd, top=False)
 
     if HEAD_DETECTION:
         yolo_model = YoloModel()
+
+    if DATA_COLLECTION:
+        data_filename, count = get_new_training_name()
+        training_data = []
 
     ss = None
 
@@ -131,9 +151,12 @@ def main():
 
     blank_img = np.zeros((OVERLAY_HEIGHT, OVERLAY_WIDTH, 3), np.uint8)
 
+    paused = False
+
     first = True
     start = time.time()
     frame_count = 0
+    print("START NOW!")
     while True:
         last_time = time.time()
 
@@ -152,7 +175,35 @@ def main():
             global auto_pilot
             if auto_pilot:
                 auto_drive(h, angle)
-            cnn_img = get_cnn_image(img, nav_th)
+        if DATA_COLLECTION:
+            if not paused:
+                overlay_img, nav_th, h, angle = detect_nav(img, overlay_img)
+                cnn_img = get_cnn_image(img, nav_th)
+
+                keys = key_check()
+                key_label = keys_to_output(keys)
+                training_data.append([cnn_img, key_label])
+
+                if len(training_data) % 100 == 0:
+                    print(f"Collecting {len(training_data)} frames")
+                    
+                    if len(training_data) == 500:
+                        np.save(data_filename, training_data)
+                        print(f"SAVED {data_filename}")
+                        training_data = []
+                        count += 1
+                        data_filename = get_training_name(count)
+
+            keys = key_check()
+            if 'T' in keys:
+                if paused:
+                    paused = False
+                    print('unpaused!')
+                    time.sleep(1)
+                else:
+                    print('Pausing!')
+                    paused = True
+                    time.sleep(1)
 
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)

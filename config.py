@@ -1,3 +1,5 @@
+import os
+
 class Config:
     MAP_HEIGHT = (462, 556)
     MAP_WIDTH = (13, 158)
@@ -14,6 +16,8 @@ class Config:
     TOP_RIGHT_MAP_RANGE = tuple([slice(TOP_RIGHT_MAP_HEIGHT[0], TOP_RIGHT_MAP_HEIGHT[1]), slice(TOP_RIGHT_MAP_WIDTH[0], TOP_RIGHT_MAP_WIDTH[1])])
 
     IGNORE_BOTTOM_HEIGHT = 405
+
+    TRAINING_DATA_PATH = os.path.join("data", "training_data-X.npy")
 
 
 if __name__ == "__main__":
