@@ -1,6 +1,7 @@
 import os
 
 import cv2
+import numpy as np
 
 ASSET_PATH = "assets"
 
@@ -22,3 +23,98 @@ def detect_face(overlay_img, img):
         # break
     
     return overlay_img, (aim_x, aim_y)
+
+def detect_head(yolo_model, img, overlay_img):
+    out_df, detected_img = yolo_model.detect(img)
+    for index, row in out_df.iterrows():
+        overlay_img = cv2.rectangle(overlay_img, (row.xmin, row.ymin), (row.xmax, row.ymax), (255, 255, 0), thickness=1)
+    for index, row in out_df.iterrows():
+        aim_x = int((row.xmin + row.xmax) / 2)
+        aim_y = int((row.ymin + row.ymax) / 2)
+        overlay_img = cv2.circle(overlay_img, (aim_x, aim_y), radius = 4, color=(0, 0, 255), thickness=2)
+        break
+    return overlay_img
+
+def detect_nav(img, overlay_img):
+    lower_nav_color = (160, 160, 160)
+    upper_nav_color = (170, 255, 255)
+
+    lower_nav_head_color = (160, 170, 170)
+    upper_nav_head_color = (170, 255, 255)
+
+    MAP_HEIGHT = (462, 556)
+    MAP_WIDTH = (13, 158)
+
+    ARROW_POS = (72, 72) # relative to ROI
+
+    roi = img[MAP_HEIGHT[0]:MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1] , :]
+    roi_hsv = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
+    mask = cv2.inRange(roi_hsv, lower_nav_color, upper_nav_color)
+    head_mask = cv2.inRange(roi_hsv, lower_nav_head_color, upper_nav_head_color)
+    kernel = np.ones((2,2), np.uint8)
+    head_mask = cv2.erode(head_mask, kernel, iterations = 1)
+    head_mask = cv2.dilate(head_mask, kernel, iterations = 3)
+
+    nav_roi = roi.copy()
+    nav_roi[mask == 0] = 0
+    nav_roi[head_mask > 0] = 0
+
+    gray = cv2.cvtColor(nav_roi, cv2.COLOR_BGR2GRAY)
+
+    th = gray.copy()
+    th[head_mask > 0] = 0
+    th[th > np.max(th) / 2] = 255
+
+    contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    mask_roi = np.zeros((roi.shape[0], roi.shape[1]), np.uint8)
+    overlay_roi = np.zeros(roi.shape, np.uint8)
+
+    h = None
+    angle_with_y = None
+    if contours:
+        areas = [cv2.contourArea(c) for c in contours]
+        max_index = np.argmax(areas)
+        cnt = contours[max_index]
+
+        cv2.drawContours(mask_roi, [cnt], 0, 255, -1)
+
+        mask_roi = cv2.ximgproc.thinning(mask_roi,None,cv2.ximgproc.THINNING_GUOHALL)
+        overlay_roi[mask_roi > 0] = (255, 0, 0)
+
+        minLineLength = 10
+        maxLineGap = 10
+        lines = cv2.HoughLinesP(mask_roi,1,np.pi/180,10,np.array([]), minLineLength,maxLineGap)
+        if lines is not None:
+            dist = []
+            for line in lines:
+                x1,y1,x2,y2 = line[0]
+
+                d1 = np.sum(np.abs(np.subtract((x1, y1), ARROW_POS)))
+                d2 = np.sum(np.abs(np.subtract((x2, y2), ARROW_POS)))
+                d = d1 + d2
+                dist.append(d)
+
+            m = np.argmin(dist)
+
+            x1,y1,x2,y2 = lines[m][0]
+            cv2.line(overlay_roi,(x1,y1),(x2,y2),(0,255,0),2)
+
+            d1 = np.sum(np.subtract(ARROW_POS, (x1, y1)))
+            d2 = np.sum(np.subtract(ARROW_POS, (x2, y2)))
+            d = d1 + d2
+            # + is above, - is beneath
+
+            slope = (y2 - y1) / (x2 - x1)
+            angle_with_y = np.arctan((x2 - x1) / (y2 - y1)) # radians
+            angle_with_y = np.degrees(angle_with_y)
+
+            h = np.max([y1, y2]) - np.min([y1, y2])
+
+            # print(f"h={h}, angle={angle_with_y:.0f}")
+
+        overlay_img[MAP_HEIGHT[0]: MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1], :] = overlay_roi
+
+        # cv2.imwrite("overlay_roi.jpg", overlay_roi)
+        # cv2.imwrite("mask_roi.jpg", mask_roi)
+    return overlay_img, h, angle_with_y
