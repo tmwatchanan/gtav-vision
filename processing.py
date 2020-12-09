@@ -113,3 +113,20 @@ def find_nav_line(th, overlay_img, roi_shape, ARROW_POS, MAP_HEIGHT, MAP_WIDTH):
 
         overlay_img[MAP_HEIGHT[0]: MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1], :] = overlay_roi
     return h, angle_with_y
+
+def get_cnn_image(img, nav_th):
+    gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    cnn_img = gray_img.copy()
+    # place nav line
+    cnn_img[Config.MAP_HEIGHT[0]:Config.MAP_HEIGHT[1], Config.MAP_WIDTH[0]:Config.MAP_WIDTH[1]] = nav_th
+    # place arrow
+    arrow = gray_img[530:541, 80:91]
+    _, arrow_th = cv2.threshold(arrow, 127, 255, cv2.THRESH_BINARY)
+    cnn_img[530:541, 80:91] = arrow_th
+
+    # move map to top right
+    cnn_img[0:94, 878:1023] = cnn_img[Config.MAP_HEIGHT[0]:Config.MAP_HEIGHT[1], Config.MAP_WIDTH[0]:Config.MAP_WIDTH[1]]
+    # crop the bottom part out
+    cnn_img = cnn_img[:405, :]
+    # cv2.imwrite("cnn_img.jpg", cnn_img)
+    return cnn_img
