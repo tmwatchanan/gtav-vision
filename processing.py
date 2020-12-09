@@ -49,11 +49,9 @@ def detect_nav(img, overlay_img):
     mask = cv2.inRange(roi_hsv, lower_nav_color, upper_nav_color)
     kernel = np.ones((2,2), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    cv2.imwrite("mask.jpg", mask)
 
     nav_roi = roi.copy()
     nav_roi[mask == 0] = 0
-    cv2.imwrite("nav_roi.jpg", nav_roi)
 
     th = cv2.cvtColor(nav_roi, cv2.COLOR_BGR2GRAY)
     th[th > np.max(th) / 2] = 255

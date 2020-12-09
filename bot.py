@@ -11,6 +11,7 @@ import win32ui
 import winxpgui
 import random
 
+from config import Config
 from processing import detect_face, detect_head, detect_nav
 from processing_yolo import YoloModel
 from record_input import key_check, keys_to_output
@@ -138,7 +139,7 @@ def main():
         last_time = time.time()
 
         ss = background_screenshot(hwnd, WINDOW_WIDTH, WINDOW_HEIGHT, left=SS_LEFT_OFFSET, top=SS_TOP_OFFSET)
-        cv2.imwrite("ss.jpg", ss)
+        # cv2.imwrite("ss.jpg", ss)
         img = ss.copy()
         img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
 
@@ -153,14 +154,18 @@ def main():
             if auto_pilot:
                 auto_drive(h, angle)
             gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-            MAP_HEIGHT = (462, 556)
-            MAP_WIDTH = (13, 158)
             cnn_img = gray_img.copy()
-            cnn_img[405:, :] = 0
-            cnn_img[MAP_HEIGHT[0]:MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1]] = nav_th
+            # place nav line
+            cnn_img[Config.MAP_HEIGHT[0]:Config.MAP_HEIGHT[1], Config.MAP_WIDTH[0]:Config.MAP_WIDTH[1]] = nav_th
+            # place arrow
             arrow = gray_img[530:541, 80:91]
             _, arrow_th = cv2.threshold(arrow, 127, 255, cv2.THRESH_BINARY)
             cnn_img[530:541, 80:91] = arrow_th
+
+            # move map to top right
+            cnn_img[0:94, 878:1023] = cnn_img[Config.MAP_HEIGHT[0]:Config.MAP_HEIGHT[1], Config.MAP_WIDTH[0]:Config.MAP_WIDTH[1]]
+            # crop the bottom part out
+            cnn_img = cnn_img[:405, :]
             cv2.imwrite("cnn_img.jpg", cnn_img)
 
 
