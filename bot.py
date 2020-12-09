@@ -98,75 +98,6 @@ def set_auto_pilot(state):
     print(f"auto_pilot {auto_pilot}")
 
 
-def straight():
-    PressKey(W)
-    ReleaseKey(A)
-    ReleaseKey(D)
-    ReleaseKey(S)
-
-def left():
-    if random.randrange(0,3) == 1:
-        PressKey(W)
-    else:
-        ReleaseKey(W)
-    PressKey(A)
-    ReleaseKey(S)
-    ReleaseKey(D)
-    #ReleaseKey(S)
-
-def right():
-    if random.randrange(0,3) == 1:
-        PressKey(W)
-    else:
-        ReleaseKey(W)
-    PressKey(D)
-    ReleaseKey(A)
-    ReleaseKey(S)
-    
-def reverse():
-    PressKey(S)
-    ReleaseKey(A)
-    ReleaseKey(W)
-    ReleaseKey(D)
-
-
-def forward_left():
-    PressKey(W)
-    PressKey(A)
-    ReleaseKey(D)
-    ReleaseKey(S)
-    
-    
-def forward_right():
-    PressKey(W)
-    PressKey(D)
-    ReleaseKey(A)
-    ReleaseKey(S)
-
-    
-def reverse_left():
-    PressKey(S)
-    PressKey(A)
-    ReleaseKey(W)
-    ReleaseKey(D)
-
-    
-def reverse_right():
-    PressKey(S)
-    PressKey(D)
-    ReleaseKey(W)
-    ReleaseKey(A)
-
-def no_keys():
-
-    # if random.randrange(0,3) == 1:
-    #     PressKey(W)
-    # else:
-    ReleaseKey(W)
-    ReleaseKey(A)
-    ReleaseKey(S)
-    ReleaseKey(D)
-
 def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
     set_window_position(hwnd, top=False)
@@ -193,8 +124,6 @@ def main():
         img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
 
         overlay_img = blank_img.copy()
-        # coords = (500, 500)
-        # overlay_img = cv2.circle(overlay_img, coords, radius=10, color=(0, 0, 255), thickness=2)
         if FACE_DETECTION:
             overlay_img, (aim_x, aim_y) = detect_face(overlay_img, img)
         if HEAD_DETECTION:
@@ -213,30 +142,20 @@ def main():
             lower_nav_head_color = (160, 170, 170)
             upper_nav_head_color = (170, 255, 255)
 
-            # MAP_HEIGHT = (675, 834)
-            # MAP_WIDTH = (49, 264)
             MAP_HEIGHT = (462, 556)
             MAP_WIDTH = (13, 158)
-            # cv2.imwrite("img.jpg", img)
-            # print(img.shape)
             roi = img[MAP_HEIGHT[0]:MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1] , :]
-            # cv2.imwrite("roi.jpg", roi)
             roi_hsv = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
             mask = cv2.inRange(roi_hsv, lower_nav_color, upper_nav_color)
             head_mask = cv2.inRange(roi_hsv, lower_nav_head_color, upper_nav_head_color)
             kernel = np.ones((2,2), np.uint8)
-            # head_mask = cv2.morphologyEx(head_mask, cv2.MORPH_OPEN, kernel)
             head_mask = cv2.erode(head_mask, kernel, iterations = 1)
             head_mask = cv2.dilate(head_mask, kernel, iterations = 3)
-            # cv2.imwrite("head_mask.jpg", head_mask)
-            # overlay_img = cv2.bitwise_and(img, img, mask=mask)
-            # overlay_img[mask > 0] = (255, 0, 0)
-            # cv2.imwrite("nav.jpg", overlay_img)
 
             nav_roi = roi.copy()
             nav_roi[mask == 0] = 0
             nav_roi[head_mask > 0] = 0
-# 
+
             gray = cv2.cvtColor(nav_roi, cv2.COLOR_BGR2GRAY)
             
             th = gray.copy()
@@ -261,11 +180,6 @@ def main():
                 x,y,w,h = cv2.boundingRect(cnt)
                 # cv2.rectangle(overlay_roi,(x,y),(x+w,y+h),(0,255,0),2)
 
-                # a = np.argwhere(mask_roi > 0)
-                # dist = np.sum(np.abs(a - ARROW_POS), axis=1)
-                # m = np.argmin(dist)
-                # nav_pos = a[m]
-
                 minLineLength = 10
                 maxLineGap = 10
                 lines = cv2.HoughLinesP(mask_roi,1,np.pi/180,10,np.array([]), minLineLength,maxLineGap)
@@ -273,7 +187,6 @@ def main():
                     dist = []
                     for line in lines:
                         x1,y1,x2,y2 = line[0]
-                        # cv2.line(overlay_roi,(x1,y1),(x2,y2),(0,255,0),1)
 
                         d1 = np.sum(np.abs(np.subtract((x1, y1), ARROW_POS)))
                         d2 = np.sum(np.abs(np.subtract((x2, y2), ARROW_POS)))
@@ -314,16 +227,10 @@ def main():
                         else:
                             ReleaseKey(W)
 
-
-
                 overlay_img[MAP_HEIGHT[0]: MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1], :] = overlay_roi
 
                 cv2.imwrite("overlay_roi.jpg", overlay_roi)
                 cv2.imwrite("mask_roi.jpg", mask_roi)
-
-
-                        
-            # cv2.imshow("overlay_img", overlay_img)
 
 
         cv_hwnd = display_image(overlay_img, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
