@@ -134,3 +134,8 @@ dmypy.json
 *.pb 
 *.gz
 *.npy
+
+# dataset
+dataset/head
+dataset/Model_Weights/*/train
+dataset/Model_Weights/*/validation
