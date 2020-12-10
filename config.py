@@ -19,6 +19,18 @@ class Config:
 
     TRAINING_DATA_PATH = os.path.join("data", "training_data-X.npy")
 
+    CNN_WIDTH = 300
+    CNN_HEIGHT = 118
+
+    TRAIN_RATIO = .8
+
+    MODEL_NAME = "gtav1"
+    NUM_CLASS = 9
+
+    TRAIN_EPOCH = 500
+    TRAIN_START = 1
+    TRAIN_END = 14
+
 
 if __name__ == "__main__":
     import cv2

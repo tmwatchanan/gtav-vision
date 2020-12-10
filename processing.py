@@ -111,7 +111,7 @@ def find_nav_line(th, overlay_img, roi_shape):
         overlay_img[Config.MAP_RANGE + tuple([slice(None)])] = overlay_roi
     return h, angle_with_y
 
-def get_cnn_image(img, nav_th):
+def get_cnn_gray_image(img, nav_th):
     gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     cnn_img = gray_img.copy()
     # place nav line
@@ -126,4 +126,21 @@ def get_cnn_image(img, nav_th):
     # crop the bottom part out
     cnn_img = cnn_img[:Config.IGNORE_BOTTOM_HEIGHT, :]
     # cv2.imwrite("cnn_img.jpg", cnn_img)
+    return cnn_img
+
+def get_cnn_image(img, nav_th):
+    cnn_img = img.copy()
+    # place nav line
+    cnn_img[Config.MAP_RANGE] = cv2.cvtColor(nav_th, cv2.COLOR_GRAY2RGB)
+    # place arrow
+    arrow = cv2.cvtColor(img[Config.ARROW_RANGE], cv2.COLOR_RGB2GRAY)
+    _, arrow_th = cv2.threshold(arrow, 127, 255, cv2.THRESH_BINARY)
+    cnn_img[Config.ARROW_RANGE] = cv2.cvtColor(arrow_th, cv2.COLOR_GRAY2RGB)
+
+    # move map to top right
+    cnn_img[Config.TOP_RIGHT_MAP_RANGE] = cnn_img[Config.MAP_RANGE]
+    # crop the bottom part out
+    cnn_img = cnn_img[:Config.IGNORE_BOTTOM_HEIGHT, :]
+    cnn_img = cv2.resize(cnn_img, (Config.CNN_WIDTH, Config.CNN_HEIGHT))
+    cv2.imwrite("cnn_img-new.jpg", cnn_img)
     return cnn_img

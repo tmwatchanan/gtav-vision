@@ -1,4 +1,5 @@
 import os
+import random
 import time
 
 import cv2
@@ -9,19 +10,22 @@ import win32con
 import win32gui
 import win32ui
 import winxpgui
-import random
+from tensorflow.keras.applications import inception_v3
 
 from config import Config
+from control import control_decision
+from data import get_new_training_name, get_training_name
+from directkeys import A, D, PressKey, ReleaseKey, S, W
+from model import model_inceptionv3
 from processing import detect_face, detect_head, detect_nav, get_cnn_image
 from processing_yolo import YoloModel
 from record_input import key_check, keys_to_output
-
-from directkeys import PressKey, ReleaseKey, W, A, S, D
 
 FACE_DETECTION = False
 HEAD_DETECTION = False
 NAV_DETECTION = False
 DATA_COLLECTION = True
+CNN_PREDICTION = False
 
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 900
@@ -117,20 +121,6 @@ def auto_drive(h, angle):
     else:
         ReleaseKey(W)
 
-def get_new_training_name():
-    count = 1
-    while True:
-        data_filename = get_training_name(count)
-        if os.path.isfile(data_filename):
-            print('File exists, moving along',count)
-            count += 1
-        else:
-            print('File does not exist, starting fresh!',count)
-            return data_filename, count
-
-def get_training_name(count):
-    return Config.TRAINING_DATA_PATH.replace("X", str(count))
-
 def main():
     hwnd = win32gui.FindWindow(None, "FiveM - GTA FIVEM 1%")
     set_window_position(hwnd, top=False)
@@ -141,6 +131,11 @@ def main():
     if DATA_COLLECTION:
         data_filename, count = get_new_training_name()
         training_data = []
+    
+    if CNN_PREDICTION:
+        _, model = model_inceptionv3()
+        model.load_weights(os.path.join("models", Config.MODEL_NAME + ".hdf5"))
+        print(model)
 
     ss = None
 
@@ -193,9 +188,8 @@ def main():
                         training_data = []
                         count += 1
                         data_filename = get_training_name(count)
-
             keys = key_check()
-            if 'T' in keys:
+            if 'G' in keys:
                 if paused:
                     paused = False
                     print('unpaused!')
@@ -203,6 +197,32 @@ def main():
                 else:
                     print('Pausing!')
                     paused = True
+                    time.sleep(1)
+        if CNN_PREDICTION:
+            if not paused:
+                overlay_img, nav_th, h, angle = detect_nav(img, overlay_img)
+                cnn_img = get_cnn_image(img, nav_th)
+                cnn_img = inception_v3.preprocess_input(cnn_img)
+                cnn_img = np.expand_dims(cnn_img, axis=0)
+
+                prediction = model.predict([cnn_img])[0]
+                prediction = np.array(prediction)# * np.array([4.5, 0.1, 0.1, 0.1,  1.8,   1.8, 0.5, 0.5, 0.2])
+                mode_choice = np.argmax(prediction)
+                print(prediction, mode_choice)
+
+                choice_picked = control_decision(mode_choice)
+
+            keys = key_check()
+
+            if 'G' in keys:
+                if paused:
+                    paused = False
+                    time.sleep(1)
+                else:
+                    paused = True
+                    ReleaseKey(A)
+                    ReleaseKey(W)
+                    ReleaseKey(D)
                     time.sleep(1)
 
 

@@ -1,8 +1,9 @@
 # ref: Box Of Hats (https://github.com/Box-Of-Hats)
 # ref: https://github.com/Sentdex/pygta5/blob/master/1.%20collect_data.py
 
-import win32api
 import time
+
+import win32api
 
 w = [1,0,0,0,0,0,0,0,0]
 s = [0,1,0,0,0,0,0,0,0]
