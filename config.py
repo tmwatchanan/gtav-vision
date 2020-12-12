@@ -24,12 +24,13 @@ class Config:
 
     TRAIN_RATIO = .8
 
-    MODEL_NAME = "gtav1"
+    MODEL_NAME = "gtav2"
     NUM_CLASS = 9
 
     TRAIN_EPOCH = 500
     TRAIN_START = 1
-    TRAIN_END = 14
+    TRAIN_END = 51
+    LEARNING_RATE = 0.00001
 
 
 if __name__ == "__main__":

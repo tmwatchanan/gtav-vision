@@ -9,6 +9,7 @@ session = tf.InteractiveSession(config=config)
 import numpy as np
 from tensorflow.keras.applications import inception_v3
 from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+from tensorflow.keras.optimizers import Adam
 
 from config import Config
 from data import get_training_name
@@ -25,7 +26,8 @@ def train_top(model_name):
     for layer in backbone.layers:
         layer.trainable = False
     # compile the model (should be done *after* setting layers to non-trainable)
-    model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+    optimizer = Adam(learning_rate=Config.LEARNING_RATE)
+    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
     model_path = os.path.join("models", model_name + ".hdf5") # -{epoch:04d}-{val_loss:.2f}
     checkpoint = ModelCheckpoint(filepath=model_path, monitor='val_loss', verbose=1, save_best_only=True)
@@ -47,9 +49,9 @@ def train_top(model_name):
             print(Y.shape)
 
             # tensorboard = TensorBoard('./logs', update_freq=1)
-            model.fit(X, Y, batch_size=32, epochs=2, verbose=1, validation_split=.2, shuffle=True, callbacks=[checkpoint])
+            model.fit(X, Y, batch_size=32, epochs=1, verbose=1, validation_split=.2, shuffle=True, callbacks=[checkpoint])
 
 
 
 if __name__ == "__main__":
-    train_top(model_name="gtav1")
+    train_top(model_name=Config.MODEL_NAME)
