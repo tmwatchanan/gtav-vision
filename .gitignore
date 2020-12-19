@@ -127,3 +127,20 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Keras model files
+*.h5
+*.weights
+*.pb 
+*.gz
+*.npy
+
+# dataset
+dataset/head
+dataset/Model_Weights/*/train
+dataset/Model_Weights/*/validation
+
+training*/
+logs*/
+models/
+training.zip
