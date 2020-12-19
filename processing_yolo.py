@@ -2,6 +2,7 @@ import os
 import sys
 import cv2
 
+from tensorflow.keras.utils import plot_model
 
 src_path = "yolo"
 
@@ -114,6 +115,7 @@ class YoloModel:
 
 if __name__ == "__main__":
     yolo_model = YoloModel()
+    plot_model(yolo_model.yolo.yolo_model, show_shapes=True, to_file='yolov3_architecture.png')
     img = cv2.imread("1.png")
     # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     out_df, detected_img = yolo_model.detect(img)
