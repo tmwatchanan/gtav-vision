@@ -3,6 +3,8 @@ import os
 import cv2
 import numpy as np
 
+from config import Config
+
 ASSET_PATH = "assets"
 
 def detect_face(overlay_img, img):
@@ -36,39 +38,32 @@ def detect_head(yolo_model, img, overlay_img):
     return overlay_img
 
 def detect_nav(img, overlay_img):
-    lower_nav_color = (160, 160, 160)
+    lower_nav_color = (160, 100, 170)
     upper_nav_color = (170, 255, 255)
 
-    lower_nav_head_color = (160, 170, 170)
-    upper_nav_head_color = (170, 255, 255)
-
-    MAP_HEIGHT = (462, 556)
-    MAP_WIDTH = (13, 158)
-
-    ARROW_POS = (72, 72) # relative to ROI
-
-    roi = img[MAP_HEIGHT[0]:MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1] , :]
+    roi = img[Config.MAP_RANGE + tuple([slice(None)])]
     roi_hsv = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
     mask = cv2.inRange(roi_hsv, lower_nav_color, upper_nav_color)
-    head_mask = cv2.inRange(roi_hsv, lower_nav_head_color, upper_nav_head_color)
     kernel = np.ones((2,2), np.uint8)
-    head_mask = cv2.erode(head_mask, kernel, iterations = 1)
-    head_mask = cv2.dilate(head_mask, kernel, iterations = 3)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
     nav_roi = roi.copy()
     nav_roi[mask == 0] = 0
-    nav_roi[head_mask > 0] = 0
 
-    gray = cv2.cvtColor(nav_roi, cv2.COLOR_BGR2GRAY)
-
-    th = gray.copy()
-    th[head_mask > 0] = 0
+    th = cv2.cvtColor(nav_roi, cv2.COLOR_BGR2GRAY)
     th[th > np.max(th) / 2] = 255
 
+    h, angle_with_y = find_nav_line(th, overlay_img, roi.shape)
+
+        # cv2.imwrite("overlay_roi.jpg", overlay_roi)
+        # cv2.imwrite("mask_roi.jpg", mask_roi)
+    return overlay_img, th, h, angle_with_y
+
+def find_nav_line(th, overlay_img, roi_shape):
     contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    mask_roi = np.zeros((roi.shape[0], roi.shape[1]), np.uint8)
-    overlay_roi = np.zeros(roi.shape, np.uint8)
+    mask_roi = np.zeros((roi_shape[0], roi_shape[1]), np.uint8)
+    overlay_roi = np.zeros(roi_shape, np.uint8)
 
     h = None
     angle_with_y = None
@@ -90,8 +85,8 @@ def detect_nav(img, overlay_img):
             for line in lines:
                 x1,y1,x2,y2 = line[0]
 
-                d1 = np.sum(np.abs(np.subtract((x1, y1), ARROW_POS)))
-                d2 = np.sum(np.abs(np.subtract((x2, y2), ARROW_POS)))
+                d1 = np.sum(np.abs(np.subtract((x1, y1), Config.ARROW_POS)))
+                d2 = np.sum(np.abs(np.subtract((x2, y2), Config.ARROW_POS)))
                 d = d1 + d2
                 dist.append(d)
 
@@ -100,8 +95,8 @@ def detect_nav(img, overlay_img):
             x1,y1,x2,y2 = lines[m][0]
             cv2.line(overlay_roi,(x1,y1),(x2,y2),(0,255,0),2)
 
-            d1 = np.sum(np.subtract(ARROW_POS, (x1, y1)))
-            d2 = np.sum(np.subtract(ARROW_POS, (x2, y2)))
+            d1 = np.sum(np.subtract(Config.ARROW_POS, (x1, y1)))
+            d2 = np.sum(np.subtract(Config.ARROW_POS, (x2, y2)))
             d = d1 + d2
             # + is above, - is beneath
 
@@ -113,8 +108,52 @@ def detect_nav(img, overlay_img):
 
             # print(f"h={h}, angle={angle_with_y:.0f}")
 
-        overlay_img[MAP_HEIGHT[0]: MAP_HEIGHT[1], MAP_WIDTH[0]:MAP_WIDTH[1], :] = overlay_roi
+        overlay_img[Config.MAP_RANGE + tuple([slice(None)])] = overlay_roi
+    return h, angle_with_y
 
-        # cv2.imwrite("overlay_roi.jpg", overlay_roi)
-        # cv2.imwrite("mask_roi.jpg", mask_roi)
-    return overlay_img, h, angle_with_y
+def get_cnn_gray_image(img, nav_th):
+    gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    cnn_img = gray_img.copy()
+    # place nav line
+    cnn_img[Config.MAP_RANGE] = nav_th
+    # place arrow
+    arrow = gray_img[Config.ARROW_RANGE]
+    _, arrow_th = cv2.threshold(arrow, 127, 255, cv2.THRESH_BINARY)
+    cnn_img[Config.ARROW_RANGE] = arrow_th
+
+    # move map to top right
+    cnn_img[Config.TOP_RIGHT_MAP_RANGE] = cnn_img[Config.MAP_RANGE]
+    # crop the bottom part out
+    cnn_img = cnn_img[:Config.IGNORE_BOTTOM_HEIGHT, :]
+    # cv2.imwrite("cnn_img.jpg", cnn_img)
+    return cnn_img
+
+def get_cnn_image(img, nav_th):
+    cnn_img = img.copy()
+    # place nav line
+    cnn_img[Config.MAP_RANGE] = cv2.cvtColor(nav_th, cv2.COLOR_GRAY2RGB)
+    # place arrow
+    arrow = cv2.cvtColor(img[Config.ARROW_RANGE], cv2.COLOR_RGB2GRAY)
+    _, arrow_th = cv2.threshold(arrow, 127, 255, cv2.THRESH_BINARY)
+    cnn_img[Config.ARROW_RANGE] = cv2.cvtColor(arrow_th, cv2.COLOR_GRAY2RGB)
+
+    # move map to top right
+    cnn_img[Config.TOP_RIGHT_MAP_RANGE] = cnn_img[Config.MAP_RANGE]
+    # crop the bottom part out
+    cnn_img = cnn_img[:Config.IGNORE_BOTTOM_HEIGHT, :]
+    cnn_img = cv2.resize(cnn_img, (Config.CNN_WIDTH, Config.CNN_HEIGHT))
+    # cv2.imwrite("cnn_img-new.jpg", cnn_img)
+    return cnn_img
+
+if __name__ == "__main__":
+    OVERLAY_WIDTH = 1024
+    OVERLAY_HEIGHT = 576
+    img = cv2.imread("screen-original_img.png")
+    img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
+    cv2.imwrite("screen-img.png", img)
+    height, width, _ = img.shape
+    overlay_img = np.zeros((height, width, 3), np.uint8)
+    overlay_img, nav_th, h, angle = detect_nav(img, overlay_img)
+    cnn_img = get_cnn_image(img, nav_th)
+    cv2.imwrite("screen-nav_th.png", nav_th)
+    cv2.imwrite("screen-cnn_img.png", cnn_img)
