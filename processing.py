@@ -142,5 +142,18 @@ def get_cnn_image(img, nav_th):
     # crop the bottom part out
     cnn_img = cnn_img[:Config.IGNORE_BOTTOM_HEIGHT, :]
     cnn_img = cv2.resize(cnn_img, (Config.CNN_WIDTH, Config.CNN_HEIGHT))
-    cv2.imwrite("cnn_img-new.jpg", cnn_img)
+    # cv2.imwrite("cnn_img-new.jpg", cnn_img)
     return cnn_img
+
+if __name__ == "__main__":
+    OVERLAY_WIDTH = 1024
+    OVERLAY_HEIGHT = 576
+    img = cv2.imread("screen-original_img.png")
+    img = cv2.resize(img, (OVERLAY_WIDTH, OVERLAY_HEIGHT))
+    cv2.imwrite("screen-img.png", img)
+    height, width, _ = img.shape
+    overlay_img = np.zeros((height, width, 3), np.uint8)
+    overlay_img, nav_th, h, angle = detect_nav(img, overlay_img)
+    cnn_img = get_cnn_image(img, nav_th)
+    cv2.imwrite("screen-nav_th.png", nav_th)
+    cv2.imwrite("screen-cnn_img.png", cnn_img)
