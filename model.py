@@ -8,7 +8,7 @@ from config import Config
 def model_inceptionv3():
     backbone = inception_v3.InceptionV3(
         include_top=False,
-        weights="imagenet",
+        weights=None, #"imagenet"
         input_tensor=None,
         input_shape=(Config.CNN_HEIGHT, Config.CNN_WIDTH, 3),
         pooling=None,

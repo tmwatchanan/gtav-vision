@@ -6,27 +6,27 @@ def control_decision(max_class):
     if max_class == 0:
         straight()
         return "straight"
+    # elif max_class == 1:
+    #     reverse()
+    #     return "reverse"
+    # elif max_class == 2:
+    #     left()
+    #     return "left"
+    # elif max_class == 3:
+    #     right()
+    #     return "right"
     elif max_class == 1:
-        reverse()
-        return "reverse"
-    elif max_class == 2:
-        left()
-        return "left"
-    elif max_class == 3:
-        right()
-        return "right"
-    elif max_class == 4:
         forward_left()
         return "forward+left"
-    elif max_class == 5:
+    elif max_class == 2:
         forward_right()
         return "forward+right"
-    elif max_class == 6:
-        reverse_left()
-        return "reverse+left"
-    elif max_class == 7:
-        reverse_right()
-        return "reverse+right"
+    # elif max_class == 6:
+    #     reverse_left()
+    #     return "reverse+left"
+    # elif max_class == 7:
+    #     reverse_right()
+    #     return "reverse+right"
     else:
         no_keys()
         return "nokeys"

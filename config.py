@@ -17,20 +17,32 @@ class Config:
 
     IGNORE_BOTTOM_HEIGHT = 405
 
-    TRAINING_DATA_PATH = os.path.join("data", "training_data-X.npy")
-
-    CNN_WIDTH = 300
-    CNN_HEIGHT = 118
+    CNN_WIDTH = 500
+    CNN_HEIGHT = 196
 
     TRAIN_RATIO = .8
+    VALIDATION_RATIO = 1 - TRAIN_RATIO
 
-    MODEL_NAME = "gtav2"
-    NUM_CLASS = 9
+    MODEL_NAME = "gtav3-500x196-highway-03-8.522"
+    NUM_CLASS = 3
 
-    TRAIN_EPOCH = 500
+    LOAD_WEIGHTS_PATH = None # os.path.join("models", "gtav3-500x196-balanced-scratch-12-1.721.hdf5")
+    INITIAL_EPOCH = 0 # start from 0
+    TRAIN_EPOCH = 100
     TRAIN_START = 1
     TRAIN_END = 51
-    LEARNING_RATE = 0.00001
+    LEARNING_RATE = 0.001
+    DECAY_STEPS = 5
+    DECAY_RATE = 0.9
+    BATCH_SIZE = 40
+
+    TRAINING_DATA_PATH = os.path.join("data", "training_data-X.npy")
+    TRAINING_CSV_PATH = os.path.join("training", f"{MODEL_NAME}.csv")
+    TRAINING_IMAGES_PATH = os.path.join("training", "images")
+
+    TRANSFORM_NAME = "gtav3-500x196-highway"
+    TRANSFORM_START = 1
+    TRANSFORM_END = 89
 
 
 if __name__ == "__main__":
